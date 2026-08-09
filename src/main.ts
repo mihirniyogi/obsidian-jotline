@@ -8,20 +8,20 @@ import {
 
 const INBOX_FILE = 'tasks.md';
 
-export default class QuickCapturePlugin extends Plugin {
+export default class QuickTaskPlugin extends Plugin {
 
 	async onload() {
         this.addCommand({
             id: "open-quick-capture",
             name: "Quick capture task",
             callback: () => {
-                new QuickCaptureModal(this.app).open();
+                new QuickTaskModal(this.app).open();
             }
         });
 	}
 }
 
-class QuickCaptureModal extends Modal {
+class QuickTaskModal extends Modal {
     constructor(app: App) {
         super(app);
     }
