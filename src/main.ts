@@ -55,7 +55,7 @@ function formatTask(parsed: ParsedTask): string {
     const tagParts = [...parsed.otherTags];
     if (parsed.priorityTag) tagParts.push(parsed.priorityTag);
 
-    const parts = [parsed.description, ...tagParts].filter(p => p.length > 0);
+    const parts = [...tagParts, parsed.description].filter(p => p.length > 0);
     let line = `- [ ] ${parts.join(' ')}`;
     if (parsed.dueDate) line += ` ${DATE_EMOJI} ${parsed.dueDate}`;
     return line;
