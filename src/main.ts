@@ -14,6 +14,7 @@ function parseInput(raw: string): string {
     let description = raw.trim();
     let dueDate: string | null = null;
 
+    // extract date
     const dateIndex = description.indexOf('>');
     if (dateIndex !== -1) {
         const datePart = description.slice(dateIndex + 1).trim();
@@ -21,7 +22,17 @@ function parseInput(raw: string): string {
         dueDate = parseDate(datePart);
     }
     
-    let line = `- [ ] ${description}`;
+    // extract tags
+    const tags = description.match(/#\S+/g) ?? [];
+    description = description.replace(/#\S+/g, '').trim();
+
+    // separate tags
+    const priorityTags = tags.filter(t => /^#p\d+$/.test(t));
+    const otherTags = tags.filter(t => !/^#p\d+$/.test(t));
+
+    // rebuild
+    const parts = [description, ...otherTags, ...priorityTags].filter(p => p.length > 0);
+    let line = `- [ ] ${parts.join(' ')}`;
     if (dueDate) line += ` ${DATE_EMOJI} ${dueDate}`;
     return line;
 }
@@ -54,31 +65,31 @@ function parseDate(raw: string): string | null {
     return null;
 }
 
-export default class QuickTaskPlugin extends Plugin {
+export default class JotlinePlugin extends Plugin {
 	async onload() {
         this.addCommand({
-            id: "open-quick-capture",
-            name: "Quick capture task",
+            id: "add-task",
+            name: "Add task",
             callback: () => {
-                new QuickTaskModal(this.app).open();
+                new JotlineModal(this.app).open();
             }
         });
 	}
 }
 
-class QuickTaskModal extends Modal {
+class JotlineModal extends Modal {
     constructor(app: App) {
         super(app);
     }
 
     onOpen() {
         const { contentEl } = this;
-        contentEl.createEl('h3', { text: 'Quick Task' });
+        contentEl.createEl('h3', { text: 'Jotline' });
 
         const input = contentEl.createEl('input', {
             type: 'text',
             placeholder: "Type your task here and press Enter",
-            cls: 'quick-capture-input', // see styles.css, sets width to 100%
+            cls: 'jotline-input', // see styles.css, sets width to 100%
         });
         input.focus();
         input.addEventListener('keydown', (event) => {
@@ -88,8 +99,8 @@ class QuickTaskModal extends Modal {
                     this.appendTask(text)
                         .then(() => this.close())
                         .catch((err) => {
-                            console.error('Quick task failed:', err);
-                            new Notice('Failed to capture task');
+                            console.error('Failed to add task:', err);
+                            new Notice('Failed to add task');
                         });
                 } else {
                     this.close();
@@ -110,7 +121,7 @@ class QuickTaskModal extends Modal {
         } else {
             await this.app.vault.create(INBOX_FILE, line + '\n');
         }
-        new Notice("Task captured!");
+        new Notice("Task added!");
     }
 
     onClose() {
