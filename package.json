@@ -1,7 +1,7 @@
 {
 	"name": "jotline",
 	"version": "0.1.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Quickly capture tasks with a shortcut syntax for tags, priority, and due dates.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
