@@ -31,6 +31,13 @@ produces:
 
 which is appended to `tasks.md` in your vault (created automatically if it doesn't exist).
 
+Jotline only handles quick capture — it appends well-formatted lines to a task list and nothing more. It's meant to be paired with a task-viewing plugin such as [Tasks](https://obsidian-tasks-group.github.io/obsidian-tasks/) for querying, filtering, and managing what gets added (the 📅 due date format is already compatible).
+
+## Future development
+
+- Autocomplete for tags while typing.
+- Better natural language recognition for due dates.
+
 ## Development
 
 - Node.js 18+ required.
