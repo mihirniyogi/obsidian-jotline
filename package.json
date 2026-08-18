@@ -1,6 +1,6 @@
 {
 	"name": "jotline",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Quickly capture tasks with a shortcut syntax for tags, priority, and due dates.",
 	"main": "main.js",
 	"type": "module",
