@@ -10,3 +10,39 @@ If your plugin does not need CSS, delete this file.
 .jotline-input {
     width: 100%;
 }
+
+.jotline-chips {
+	margin-top: 10px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.jotline-chip {
+	padding: 2px 10px;
+	border-radius: 6vpx;
+	font-size: 0.8em;
+	background: var(--background-modifier-border);
+	color: var(--text-muted);
+	opacity: 0.5;
+	transition: all 0.15s ease;
+}
+
+.jotline-chip.active {
+	opacity: 1;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* priority chip coloured by level */
+.jotline-chip.active.p1 { background: #e5484d; }
+.jotline-chip.active.p2 { background: #f76b15; }
+.jotline-chip.active.p3 { background: #f5d90a; color: #000; }
+
+.jotline-preview {
+	margin-top: 10px;
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+	font-size: 0.85em;
+	min-height: 1.2em;
+}

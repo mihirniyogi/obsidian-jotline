@@ -10,30 +10,54 @@ const DATE_EMOJI = '📅';
 const DATE_FORMAT = 'YYYY-MM-DD';
 const INBOX_FILE = 'tasks.md';
 
-function parseInput(raw: string): string {
+// ---- Parsing ----
+
+interface ParsedTask {
+    description: string;
+    otherTags: string[];
+    priorityTag: string | null;
+    rawDate: string | null; // what user typed after '>'
+    dueDate: string | null; // resolved ISO date in YYYY-MM-DD
+} 
+
+function parseTask(raw: string): ParsedTask {
     let description = raw.trim();
+    let rawDate: string | null = null;
     let dueDate: string | null = null;
 
     // extract date
     const dateIndex = description.indexOf('>');
     if (dateIndex !== -1) {
-        const datePart = description.slice(dateIndex + 1).trim();
+        rawDate = description.slice(dateIndex + 1).trim();
         description = description.slice(0, dateIndex).trim();
-        dueDate = parseDate(datePart);
+        dueDate = parseDate(rawDate);
     }
     
     // extract tags
-    const tags = description.match(/#\S+/g) ?? [];
-    description = description.replace(/#\S+/g, '').trim();
+    const allTags = description.match(/#\S+/g) ?? []; // matches anything like #tag
+    description = description.replace(/#\S+/g, '').trim(); // removes them
 
     // separate tags
-    const priorityTags = tags.filter(t => /^#p\d+$/.test(t));
-    const otherTags = tags.filter(t => !/^#p\d+$/.test(t));
+    const priorityTag = allTags.find(t => /^#p\d+$/.test(t)) ?? null; // matches #p1, #p2, etc.
+    const otherTags = allTags.filter(t => !/^#p\d+$/.test(t)); // matches all other tags
 
     // rebuild
-    const parts = [description, ...otherTags, ...priorityTags].filter(p => p.length > 0);
+    return {
+        description,
+        otherTags,
+        priorityTag,
+        rawDate: rawDate && rawDate.length > 0 ? rawDate : null,
+        dueDate,
+    }
+}
+
+function formatTask(parsed: ParsedTask): string {
+    const tagParts = [...parsed.otherTags];
+    if (parsed.priorityTag) tagParts.push(parsed.priorityTag);
+
+    const parts = [parsed.description, ...tagParts].filter(p => p.length > 0);
     let line = `- [ ] ${parts.join(' ')}`;
-    if (dueDate) line += ` ${DATE_EMOJI} ${dueDate}`;
+    if (parsed.dueDate) line += ` ${DATE_EMOJI} ${parsed.dueDate}`;
     return line;
 }
 
@@ -65,6 +89,8 @@ function parseDate(raw: string): string | null {
     return null;
 }
 
+// ---- Plugin ----
+
 export default class JotlinePlugin extends Plugin {
 	async onload() {
         this.addCommand({
@@ -92,17 +118,55 @@ class JotlineModal extends Modal {
         const input = contentEl.createEl('input', {
             type: 'text',
             placeholder: "Type your task here and press Enter",
-            cls: 'jotline-input', // see styles.css, sets width to 100%
+            cls: 'jotline-input',
         });
         input.focus();
+
+        // Field indicator chips
+        const chipRow = contentEl.createDiv({ cls: 'jotline-chips' });
+        const chips = {
+            description: chipRow.createSpan({ text: 'Description', cls: 'jotline-chip' }),
+			course: chipRow.createSpan({ text: 'Course', cls: 'jotline-chip' }),
+			priority: chipRow.createSpan({ text: 'Priority', cls: 'jotline-chip' }),
+			due: chipRow.createSpan({ text: 'Due', cls: 'jotline-chip' }),
+		};
 
         // Preview of parsed task
         const preview = contentEl.createDiv({ cls: 'jotline-preview' });
 
-        // Update preview on every keystroke
+        // Update chips + preview on every keystroke
         const updatePreview = () => {
             const text = input.value.trim();
-            preview.setText(text.length > 0 ? parseInput(text) : '');
+
+            if (text.length === 0) {
+                preview.setText('');
+                Object.values(chips).forEach(chip => chip.removeClass('active'));
+                chips.priority.removeClass('p1', 'p2', 'p3');
+                return;
+            }
+            
+            const parsed = parseTask(text);
+
+            // light up chips based on what's present
+            chips.description.toggleClass('active', parsed.description.length > 0);
+			chips.course.toggleClass('active', parsed.otherTags.length > 0);
+			chips.priority.toggleClass('active', parsed.priorityTag !== null);
+			chips.due.toggleClass('active', parsed.dueDate !== null);
+
+            // colour priority chip by level
+            chips.priority.removeClass('p1', 'p2', 'p3');
+			if (parsed.priorityTag) {
+				const level = parsed.priorityTag.replace('#', ''); // "p1"
+				chips.priority.addClass(level);
+			}
+
+            // show resolved date on due chip
+            chips.due.setText(parsed.dueDate ? `Due: ${parsed.dueDate}` : 'Due');
+
+            // remove '- [ ]' prefix
+            const finalText = formatTask(parsed).replace(/^- \[ \] /, '');
+            
+            preview.setText(finalText);
         };
 
         updatePreview(); // run once on open
@@ -133,7 +197,7 @@ class JotlineModal extends Modal {
     }
 
     async appendTask(text: string) {
-        const line = parseInput(text);
+        const line = formatTask(parseTask(text));
         const file = this.app.vault.getAbstractFileByPath(INBOX_FILE);
         if (file instanceof TFile) {
             const existing = await this.app.vault.read(file);
