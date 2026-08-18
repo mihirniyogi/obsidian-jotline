@@ -84,30 +84,51 @@ class JotlineModal extends Modal {
 
     onOpen() {
         const { contentEl } = this;
+        
+        // Title
         contentEl.createEl('h3', { text: 'Jotline' });
 
+        // Input for task
         const input = contentEl.createEl('input', {
             type: 'text',
             placeholder: "Type your task here and press Enter",
             cls: 'jotline-input', // see styles.css, sets width to 100%
         });
         input.focus();
+
+        // Preview of parsed task
+        const preview = contentEl.createDiv({ cls: 'jotline-preview' });
+
+        // Update preview on every keystroke
+        const updatePreview = () => {
+            const text = input.value.trim();
+            preview.setText(text.length > 0 ? parseInput(text) : '');
+        };
+
+        updatePreview(); // run once on open
+        input.addEventListener('input', updatePreview); // run on every keystroke
+
+        // Handle 'Enter' and 'Escape' keys
         input.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                const text = input.value.trim();
-                if (text.length > 0) {
-                    this.appendTask(text)
-                        .then(() => this.close())
-                        .catch((err) => {
-                            console.error('Failed to add task:', err);
-                            new Notice('Failed to add task');
-                        });
-                } else {
-                    this.close();
-                }
-            } else if (event.key === 'Escape') {
+            if (event.key === 'Escape') {
                 this.close();
+                return;
             }
+
+            if (event.key !== 'Enter') return;
+
+            const text = input.value.trim();
+            if (text.length === 0) {
+                new Notice('Task cannot be empty');
+                return;
+            }
+
+            this.appendTask(text)
+                .then(() => this.close())
+                .catch((err) => {
+                    console.error('Failed to add task:', err);
+                    new Notice('Failed to add task');
+                });
         });
     }
 
